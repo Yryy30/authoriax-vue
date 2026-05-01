@@ -9,10 +9,10 @@ import Button from 'primevue/button';
             <template #content>
                 <div class="text-center py-8">
                     <h1 class="text-5xl font-bold text-primary mb-4">
-                        FULLSTACK DEVELOPER
+                        AUTHORIAX
                     </h1>
                     <p class="text-xl text-gray-600 mb-8">
-                        Belajar FullStack Developer dengan Rust dan Vue 3 TypeScript
+                        Build with Rust and Vue.js
                     </p>
                     
                     <div class="h-px bg-gray-200 my-8"></div>
@@ -42,19 +42,19 @@ import Button from 'primevue/button';
                         <div class="p-4 border border-gray-200 rounded-lg">
                             <i class="pi pi-shield text-3xl text-primary mb-3"></i>
                             <h3 class="font-bold text-lg mb-2">Secure Authentication</h3>
-                            <p class="text-gray-600">JWT-based authentication dengan bcrypt password hashing</p>
+                            <p class="text-gray-600">JWT-based authentication with bcrypt password hashing</p>
                         </div>
                         
                         <div class="p-4 border border-gray-200 rounded-lg">
                             <i class="pi pi-database text-3xl text-primary mb-3"></i>
                             <h3 class="font-bold text-lg mb-2">Database</h3>
-                            <p class="text-gray-600">Menggunakan SQLx untuk koneksi database yang aman</p>
+                            <p class="text-gray-600">Using SQLx for secure database connectivity</p>
                         </div>
                         
                         <div class="p-4 border border-gray-200 rounded-lg">
                             <i class="pi pi-check-circle text-3xl text-primary mb-3"></i>
                             <h3 class="font-bold text-lg mb-2">Input Validation</h3>
-                            <p class="text-gray-600">Validasi input comprehensive di backend dan frontend</p>
+                            <p class="text-gray-600">Comprehensive input validation on both backend and frontend</p>
                         </div>
                     </div>
                 </div>
