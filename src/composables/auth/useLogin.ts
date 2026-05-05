@@ -10,7 +10,7 @@ export const useLogin = () => {
 
     return useMutation({
         mutationFn: async (data: LoginRequest) => {
-            const response = await Api.post('/api/login', data);
+            const response = await Api.post('/api/auth/login', data);
 
             return response.data;
         }

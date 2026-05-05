@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { ref, computed } from 'vue'
 import { useQueryClient } from '@tanstack/vue-query'
 import { useRouter } from 'vue-router'
 import { useConfirm } from "primevue/useconfirm";
@@ -11,14 +12,30 @@ import Button from 'primevue/button';
 import ProgressSpinner from 'primevue/progressspinner';
 import DataTable from 'primevue/datatable';
 import Column from 'primevue/column';
-
+import Paginator from 'primevue/paginator';
 
 const router = useRouter()
 const queryClient = useQueryClient()
 const confirm = useConfirm();
 const toast = useToast();
 
-const { data: users, isLoading, isError, error } = useUsers()
+const page = ref(1)
+const limit = ref(10)
+
+const { data, isLoading, isError, error } = useUsers(page, limit)
+
+const users = computed(() => data.value?.data ?? [])
+const totalRecords = computed(() => data.value?.meta.total ?? 0)
+
+const onPageChange = (event: { page: number; rows: number }) => {
+    page.value = event.page + 1
+    limit.value = event.rows
+}
+
+const getRowNumber = (index: number) => {
+    return (page.value - 1) * limit.value + index + 1
+}
+
 const { mutate, isPending } = useUserDelete()
 
 const handleDelete = (id: string, name: string) => {
@@ -90,50 +107,61 @@ const createUser = () => {
                         <p class="mt-4 text-gray-600">Loading...</p>
                     </div>
 
-                    <div v-if="isError" class="p-4 bg-red-50 border border-red-200 rounded-lg">
+                    <div v-else-if="isError" class="p-4 bg-red-50 border border-red-200 rounded-lg">
                         <div class="flex items-center gap-2 text-red-700">
                             <i class="pi pi-exclamation-circle"></i>
                             <span>Error: {{ error?.message }}</span>
                         </div>
                     </div>
 
-                    <DataTable 
-                        v-if="users" 
-                        :value="users" 
-                        stripedRows
-                        :paginator="true"
-                        :rows="10"
-                        :rowsPerPageOptions="[5, 10, 20, 50]"
-                        tableStyle="min-width: 50rem"
-                        paginatorTemplate="RowsPerPageDropdown FirstPageLink PrevPageLink CurrentPageReport NextPageLink LastPageLink"
-                        currentPageReportTemplate="{first} to {last} of {totalRecords}"
-                    >
-                        <!-- <Column field="id" header="ID" sortable style="width: 10%"></Column> -->
-                        <Column field="name" header="Full Name" sortable></Column>
-                        <Column field="email" header="Email Address" sortable></Column>
-                        <Column field="role" header="Role" sortable></Column>
-                        <Column header="Actions" style="width: 20%">
-                            <template #body="slotProps">
-                                <div class="flex gap-2">
-                                    <Button 
-                                        icon="pi pi-pencil"
-                                        severity="primary"
-                                        size="small"
-                                        @click="editUser(slotProps.data.id)"
-                                        v-tooltip.top="'Edit'"
-                                    />
-                                    <Button 
-                                        icon="pi pi-trash"
-                                        severity="danger"
-                                        size="small"
-                                        @click="handleDelete(slotProps.data.id, slotProps.data.name)"
-                                        :loading="isPending"
-                                        v-tooltip.top="'Delete'"
-                                    />
-                                </div>
-                            </template>
-                        </Column>
-                    </DataTable>
+                    <template v-else>
+                        <DataTable 
+                            v-if="data && !isLoading" 
+                            :value="users" 
+                            stripedRows
+                            tableStyle="min-width: 50rem"
+                        >
+                            <!-- <Column field="id" header="ID" sortable style="width: 10%"></Column> -->
+                            <Column header="#" style="width: 5%">
+                                <template #body="slotProps">
+                                    {{ getRowNumber(slotProps.index) }}
+                                </template>
+                            </Column>
+                            <Column field="name" header="Full Name" sortable></Column>
+                            <Column field="email" header="Email Address" sortable></Column>
+                            <Column field="role" header="Role" sortable></Column>
+                            <Column header="Actions" style="width: 20%">
+                                <template #body="slotProps">
+                                    <div class="flex gap-2">
+                                        <Button 
+                                            icon="pi pi-pencil"
+                                            severity="primary"
+                                            size="small"
+                                            @click="editUser(slotProps.data.id)"
+                                            v-tooltip.top="'Edit'"
+                                        />
+                                        <Button 
+                                            icon="pi pi-trash"
+                                            severity="danger"
+                                            size="small"
+                                            @click="handleDelete(slotProps.data.id, slotProps.data.name)"
+                                            :loading="isPending"
+                                            v-tooltip.top="'Delete'"
+                                        />
+                                    </div>
+                                </template>
+                            </Column>
+                        </DataTable>
+    
+                        <Paginator
+                            v-if="data"
+                            :rows="limit"
+                            :totalRecords="totalRecords"
+                            :rowsPerPageOptions="[5, 10, 20, 50]"
+                            @page="onPageChange"
+                            class="mt-4"
+                        />
+                    </template>
                 </template>
             </Card>
         </div>
