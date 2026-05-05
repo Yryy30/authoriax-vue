@@ -20,16 +20,20 @@ export interface PaginatedUsers {
     };
 }
 
-export const useUsers = (page: Ref<number>, limit: Ref<number>) => {
+export const useUsers = (page: Ref<number>, limit: Ref<number>, search: Ref<string>) => {
 
     return useQuery<PaginatedUsers, Error>({
-        queryKey: ['users', page, limit],
+        queryKey: ['users', page, limit, search],
 
         queryFn: async () => {
             const token = Cookies.get('token');
 
             const response = await Api.get('/api/users', {
-                params: { page: page.value, limit: limit.value },
+                params: { 
+                    page: page.value, 
+                    limit: limit.value,
+                    ...(search.value ? { search: search.value} : {}),
+                },
                 headers: {
                     Authorization: `Bearer ${token}`,
                 },

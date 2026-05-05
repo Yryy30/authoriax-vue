@@ -1,11 +1,13 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { computed } from 'vue'
 import { useQueryClient } from '@tanstack/vue-query'
 import { useRouter } from 'vue-router'
 import { useConfirm } from "primevue/useconfirm";
 import { useToast } from "primevue/usetoast";
 import { useUsers } from '../../../composables/user/useUsers'
 import { useUserDelete } from '../../../composables/user/useUserDelete'
+import { usePagination } from '../../../composables/usePagination'
+import { useSearch } from '../../../composables/useSearch'
 import AppSidebar from '../../../components/AppSidebar.vue';
 import Card from 'primevue/card';
 import Button from 'primevue/button';
@@ -13,28 +15,20 @@ import ProgressSpinner from 'primevue/progressspinner';
 import DataTable from 'primevue/datatable';
 import Column from 'primevue/column';
 import Paginator from 'primevue/paginator';
+import InputText from 'primevue/inputtext';
 
 const router = useRouter()
 const queryClient = useQueryClient()
 const confirm = useConfirm();
 const toast = useToast();
 
-const page = ref(1)
-const limit = ref(10)
+const { page, limit, onPageChange, resetPage, getRowNumber } = usePagination();
+const { search, searchInput, onSearchInput, clearSearch } = useSearch();
 
-const { data, isLoading, isError, error } = useUsers(page, limit)
+const { data, isLoading, isError, error } = useUsers(page, limit, search)
 
 const users = computed(() => data.value?.data ?? [])
 const totalRecords = computed(() => data.value?.meta.total ?? 0)
-
-const onPageChange = (event: { page: number; rows: number }) => {
-    page.value = event.page + 1
-    limit.value = event.rows
-}
-
-const getRowNumber = (index: number) => {
-    return (page.value - 1) * limit.value + index + 1
-}
 
 const { mutate, isPending } = useUserDelete()
 
@@ -102,6 +96,23 @@ const createUser = () => {
                     </div>
                 </template>
                 <template #content>
+                    <!-- Search Bar -->
+                    <div class="mb-4 flex gap-2">
+                        <InputText
+                            v-model="searchInput"
+                            placeholder="Search by name or email..."
+                            class="w-full"
+                            @input="onSearchInput(resetPage)"
+                        />
+                        <Button
+                            v-if="searchInput"
+                            icon="pi pi-times"
+                            severity="secondary"
+                            @click="clearSearch(resetPage)"
+                            v-tooltip.top="'Clear search'"
+                        />
+                    </div>
+
                     <div v-if="isLoading" class="text-center py-8">
                         <ProgressSpinner />
                         <p class="mt-4 text-gray-600">Loading...</p>
@@ -115,52 +126,58 @@ const createUser = () => {
                     </div>
 
                     <template v-else>
-                        <DataTable 
-                            v-if="data && !isLoading" 
-                            :value="users" 
-                            stripedRows
-                            tableStyle="min-width: 50rem"
-                        >
-                            <!-- <Column field="id" header="ID" sortable style="width: 10%"></Column> -->
-                            <Column header="#" style="width: 5%">
-                                <template #body="slotProps">
-                                    {{ getRowNumber(slotProps.index) }}
-                                </template>
-                            </Column>
-                            <Column field="name" header="Full Name" sortable></Column>
-                            <Column field="email" header="Email Address" sortable></Column>
-                            <Column field="role" header="Role" sortable></Column>
-                            <Column header="Actions" style="width: 20%">
-                                <template #body="slotProps">
-                                    <div class="flex gap-2">
-                                        <Button 
-                                            icon="pi pi-pencil"
-                                            severity="primary"
-                                            size="small"
-                                            @click="editUser(slotProps.data.id)"
-                                            v-tooltip.top="'Edit'"
-                                        />
-                                        <Button 
-                                            icon="pi pi-trash"
-                                            severity="danger"
-                                            size="small"
-                                            @click="handleDelete(slotProps.data.id, slotProps.data.name)"
-                                            :loading="isPending"
-                                            v-tooltip.top="'Delete'"
-                                        />
-                                    </div>
-                                </template>
-                            </Column>
-                        </DataTable>
-    
-                        <Paginator
-                            v-if="data"
-                            :rows="limit"
-                            :totalRecords="totalRecords"
-                            :rowsPerPageOptions="[5, 10, 20, 50]"
-                            @page="onPageChange"
-                            class="mt-4"
-                        />
+                        <div v-if="search && totalRecords === 0" class="text-center py-8 text-gray-500">
+                            <i class="pi pi-search text-4xl mb-3 opacity-30"></i>
+                            <p>No users found for "<strong>{{ search }}</strong>"</p>
+                        </div>
+
+                        <template v-else>
+                            <DataTable 
+                                v-if="data && !isLoading" 
+                                :value="users" 
+                                stripedRows
+                                tableStyle="min-width: 50rem"
+                            >
+                                <Column header="#" style="width: 5%">
+                                    <template #body="slotProps">
+                                        {{ getRowNumber(slotProps.index) }}
+                                    </template>
+                                </Column>
+                                <Column field="name" header="Full Name" sortable></Column>
+                                <Column field="email" header="Email Address" sortable></Column>
+                                <Column field="role" header="Role" sortable></Column>
+                                <Column header="Actions" style="width: 20%">
+                                    <template #body="slotProps">
+                                        <div class="flex gap-2">
+                                            <Button 
+                                                icon="pi pi-pencil"
+                                                severity="primary"
+                                                size="small"
+                                                @click="editUser(slotProps.data.id)"
+                                                v-tooltip.top="'Edit'"
+                                            />
+                                            <Button 
+                                                icon="pi pi-trash"
+                                                severity="danger"
+                                                size="small"
+                                                @click="handleDelete(slotProps.data.id, slotProps.data.name)"
+                                                :loading="isPending"
+                                                v-tooltip.top="'Delete'"
+                                            />
+                                        </div>
+                                    </template>
+                                </Column>
+                            </DataTable>
+
+                            <Paginator
+                                v-if="data"
+                                :rows="limit"
+                                :totalRecords="totalRecords"
+                                :rowsPerPageOptions="[5, 10, 20, 50]"
+                                @page="onPageChange"
+                                class="mt-4"
+                            />
+                        </template>
                     </template>
                 </template>
             </Card>
